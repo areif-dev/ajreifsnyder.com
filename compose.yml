@@ -1,0 +1,119 @@
+# Docker Compose file for a Baikal server with Let's Encrypt using Traefik (https://docs.traefik.io/)
+#
+# The acme.json file must exist before you run docker compose up.
+#
+# 1. Adjust host in line 17
+# 2. Create acme.json: touch /etc/ssl/private/acme.json
+# 3. Adjust file permissions: chmod 600 /etc/ssl/private/acme.json
+# 4. Start the stack: docker compose -f docker compose.ssl.yaml up
+
+services:
+  traefik:
+    image: traefik:3.1
+    container_name: traefik
+    depends_on: 
+      - authelia
+    restart: always
+    ports:
+      - 80:80
+      - 443:443
+    volumes:
+      - ./data/letsencrypt:/letsencrypt
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    command:
+      - --log.level=DEBUG
+      - --api.insecure=true
+      - --providers.docker=true
+      - --providers.docker.exposedbydefault=false
+      - --entryPoints.websecure.address=:443
+      - --certificatesresolvers.myresolver.acme.tlschallenge=true
+      - --certificatesresolvers.myresolver.acme.email=${ACME_EMAIL}
+      - --certificatesresolvers.myresolver.acme.storage=/letsencrypt/acme.json
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.api.rule=Host(`${DOMAIN}`)"
+      - "traefik.http.routers.api.entrypoints=websecure"
+      - "traefik.http.routers.api.service=api@internal"
+      - "traefik.http.routers.api.middlewares=authelia@docker"
+
+  authelia_redis:
+    image: redis
+    restart: unless-stopped
+    container_name: authelia_redis
+
+  authelia_generate_secrets:
+    build: generate_secrets
+    volumes:
+      - ./data/authelia/secrets:/secrets
+
+  authelia:
+    image: authelia/authelia
+    container_name: authelia
+    labels:
+      - 'traefik.enable=true'
+      - 'traefik.http.routers.authelia.rule=Host(`auth.${DOMAIN}`)'
+      - 'traefik.http.routers.authelia.entryPoints=websecure'
+      - 'traefik.http.middlewares.authelia.forwardAuth.address=http://authelia:9091/api/authz/forward-auth'
+      - 'traefik.http.middlewares.authelia.forwardAuth.trustForwardHeader=true'
+      - 'traefik.http.middlewares.authelia.forwardAuth.authResponseHeaders=Remote-User,Remote-Groups,Remote-Email,Remote-Name'
+    depends_on:
+      authelia_generate_secrets:
+        condition: service_completed_successfully
+    volumes:
+      - ./data/authelia:/config
+    restart: unless-stopped
+    expose: 
+      - 9091
+    environment:
+      TZ: America/New_York
+      X_AUTHELIA_CONFIG_FILTERS: template
+      MY_DOMAIN: ${DOMAIN}
+      AUTHELIA_IDENTITY_VALIDATION_RESET_PASSWORD_JWT_SECRET_FILE: /config/secrets/JWT_SECRET
+      AUTHELIA_SESSION_SECRET_FILE: /config/secrets/SESSION_SECRET
+      AUTHELIA_STORAGE_ENCRYPTION_KEY_FILE: /config/secrets/STORAGE_ENCRYPTION_KEY
+
+  baikal:
+    image: ckulka/baikal:nginx
+    container_name: baikal
+    restart: unless-stopped
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.baikal.rule=Host(`dav.${DOMAIN}`)
+      - traefik.http.routers.baikal.entrypoints=websecure
+      - traefik.http.routers.baikal.tls.certresolver=myresolver
+      # Traefik middleware required for iOS, see https://github.com/ckulka/baikal-docker/issues/37.
+      - traefik.http.routers.baikal.middlewares=baikal-dav
+      - traefik.http.middlewares.baikal-dav.redirectregex.regex=https://(.*)/.well-known/(card|cal)dav
+      - traefik.http.middlewares.baikal-dav.redirectregex.replacement=https://$$1/dav.php/
+      - traefik.http.middlewares.baikal-dav.redirectregex.permanent=true
+    volumes:
+      - config:/var/www/baikal/config
+      - data:/var/www/baikal/Specific
+  
+  freshrss:
+    image: freshrss/freshrss:1
+    container_name: freshrss
+    restart: unless-stopped
+    volumes:
+      - freshrss-data:/var/www/FreshRSS/data
+    labels:
+      - traefik.enable=true
+      - traefik.http.middlewares.freshrssM1.compress=true
+      - traefik.http.middlewares.freshrssM2.headers.browserXssFilter=true
+      - traefik.http.middlewares.freshrssM2.headers.forceSTSHeader=true
+      - traefik.http.middlewares.freshrssM2.headers.frameDeny=true
+      - traefik.http.middlewares.freshrssM2.headers.referrerPolicy=no-referrer-when-downgrade
+      - traefik.http.middlewares.freshrssM2.headers.stsSeconds=31536000
+      - traefik.http.routers.freshrss.entrypoints=websecure
+      - traefik.http.routers.freshrss.tls.certresolver=myresolver
+      - traefik.http.routers.freshrss.tls=true
+      - traefik.http.routers.freshrss.middlewares=freshrssM1,freshrssM2
+      - traefik.http.routers.freshrss.rule=Host(`${SERVER_DNS}`)
+    environment:
+      TZ: America/New_York
+      CRON_MIN: '2,32'
+
+volumes:
+  config:
+  data:
+  freshrss-data:
