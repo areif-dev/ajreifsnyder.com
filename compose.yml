@@ -23,7 +23,7 @@ services:
       - 9091
     restart: unless-stopped
     environment: 
-      - TZ=America/New_York
+      - TZ="America/New_York"
 
   redis:
     image: redis:alpine
@@ -36,7 +36,7 @@ services:
       - 6379
     restart: unless-stopped
     environment: 
-      - TZ=America/New_York
+      - TZ="America/New_York"
 
   traefik:
     image: traefik:3.1
@@ -94,7 +94,21 @@ services:
     networks: 
       - net
 
-volumes:
-  config:
-  data:
-
+  freshrss:
+    image: freshrss/freshrss:latest
+    container_name: freshrss 
+    restart: unless-stopped 
+    labels:
+      - 'traefik.enable=true'
+      - 'traefik.http.routers.freshrss.rule=Host(`freshrss.${DOMAIN}`)'
+      - 'traefik.http.routers.freshrss.entrypoints=https'
+      - 'traefik.http.routers.freshrss.tls=true'
+      - 'traefik.http.routers.freshrss.tls.certresolver=letsencrypt'
+      - 'traefik.http.routers.freshrss.middlewares=authelia@docker'
+    volumes: 
+      - ./freshrss/data:/var/www/FreshRSS/data 
+    networks:
+      - net
+    environment: 
+      - TZ="America/New_York"
+      - CRON_MIN="3,33"
