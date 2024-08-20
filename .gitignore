@@ -2,3 +2,5 @@
 authelia/
 traefik/
 baikal/
+freshress/
+redis/
