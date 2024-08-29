@@ -112,3 +112,22 @@ services:
     environment: 
       - TZ="America/New_York"
       - CRON_MIN="3,33"
+
+  shopify-contact:
+    image: shopify-contact
+    container_name: shopify-contact 
+    restart: unless-stopped
+    ports: 
+      - ${SHOPIFY_CONTACT_PORT}
+    labels: 
+      - 'traefik.enable=true'
+      - 'traefik.http.routers.shopify-contact.rule=Host(`shopify-contact.${DOMAIN}`)'
+      - 'traefik.http.routers.shopify-contact.entrypoints=https'
+      - 'traefik.http.routers.shopify-contact.tls=true'
+      - 'traefik.http.routers.shopify-contact.tls.certresolver=letsencrypt'
+      - 'traefik.http.routers.shopify-contact.middlewares=authelia@docker'
+    volumes: 
+      - ./shopify-contact/shopify-contact.db:/var/lib/shopify-contact/shopify-contact.db 
+      - ./shopify-contact/conf.json:/etc/shopify-contact/conf.json
+    networks:
+      - net
