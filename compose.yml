@@ -114,7 +114,7 @@ services:
       - CRON_MIN="3,33"
 
   shopify-contact:
-    image: shopify-contact
+    image: ghcr.io/areif-dev/shopify-contact:latest
     container_name: shopify-contact 
     restart: unless-stopped
     ports: 
