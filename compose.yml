@@ -131,3 +131,29 @@ services:
       - ./shopify-contact/conf.json:/etc/shopify-contact/conf.json
     networks:
       - net
+
+  webdav:
+    image: ghcr.io/drakkan/sftpgo:latest 
+    container_name: webdav 
+    restart: unless-stopped 
+    labels:
+      - 'traefik.enable=true'
+      - 'traefik.http.routers.webdav.rule=Host(`webdav.${DOMAIN}`)'
+      - 'traefik.http.routers.webdav.entrypoints=https'
+      - 'traefik.http.routers.webdav.tls=true'
+      - 'traefik.http.routers.webdav.tls.certresolver=letsencrypt'
+      - 'traefik.http.routers.webdav.middlewares=authelia@docker'
+
+      # UI config
+      - 'traefik.enable=true'
+      - 'traefik.http.routers.webdav_ui.rule=Host(`webdav-ui.${DOMAIN}`)'
+      - 'traefik.http.routers.webdav_ui.entrypoints=https'
+      - 'traefik.http.routers.webdav_ui.tls=true'
+      - 'traefik.http.routers.webdav_ui.tls.certresolver=letsencrypt'
+      - 'traefik.http.routers.webdav_ui.middlewares=authelia@docker'
+    volumes: 
+      # Both these dirs need to `chown -R 1000:1000`
+      - ./webdav/data:/srv/sftpgo 
+      - ./webdav/home:/var/lib/sftpgo 
+    networks: 
+      - net 
