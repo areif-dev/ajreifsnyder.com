@@ -132,28 +132,66 @@ services:
     networks:
       - net
 
-  webdav:
-    image: ghcr.io/drakkan/sftpgo:latest 
-    container_name: webdav 
-    restart: unless-stopped 
+  bitwarden-frontend:
+    image: nginx:alpine
+    container_name: bitwarden-frontend
+    restart: unless-stopped
+    volumes:
+      - ./bitwarden/frontend/bitwarden.conf:/etc/nginx/conf.d/bitwarden.conf
+    networks:
+      - net 
+    depends_on:
+      - bitwarden-backend
     labels:
       - 'traefik.enable=true'
-      - 'traefik.http.routers.webdav.rule=Host(`webdav.${DOMAIN}`)'
-      - 'traefik.http.routers.webdav.entrypoints=https'
-      - 'traefik.http.routers.webdav.tls=true'
-      - 'traefik.http.routers.webdav.tls.certresolver=letsencrypt'
-      - 'traefik.http.routers.webdav.middlewares=authelia@docker'
+      - 'traefik.http.routers.bitwarden.rule=Host(`bitwarden.${DOMAIN}`)'
+      - 'traefik.http.routers.bitwarden.entrypoints=https'
+      - 'traefik.http.routers.bitwarden.tls.certresolver=letsencrypt'
+      - 'traefik.http.routers.bitwarden.middlewares=authelia@docker'
+      - 'traefik.http.routers.bitwarden.service=bitwarden-service'
+      - 'traefik.http.services.bitwarden-service.loadbalancer.server.port=80'
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "1m"
 
-      # UI config
-      - 'traefik.enable=true'
-      - 'traefik.http.routers.webdav_ui.rule=Host(`webdav-ui.${DOMAIN}`)'
-      - 'traefik.http.routers.webdav_ui.entrypoints=https'
-      - 'traefik.http.routers.webdav_ui.tls=true'
-      - 'traefik.http.routers.webdav_ui.tls.certresolver=letsencrypt'
-      - 'traefik.http.routers.webdav_ui.middlewares=authelia@docker'
-    volumes: 
-      # Both these dirs need to `chown -R 1000:1000`
-      - ./webdav/data:/srv/sftpgo 
-      - ./webdav/home:/var/lib/sftpgo 
-    networks: 
-      - net 
+  bitwarden-backend:
+    image: vaultwarden/server:latest
+    container_name: bitwarden-backend
+    restart: unless-stopped
+    volumes:
+      - ./bitwarden/backend/data:/data
+    environment:
+      - WEBSOCKET_ENABLED=true
+      - SIGNUPS_ALLOWED=false
+    networks:
+      - net
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "1m"
+
+  bitwarden-backup:
+    image: bruceforce/bw_backup:latest
+    container_name: bitwarden-backup
+    restart: unless-stopped
+    depends_on:
+      - bitwarden-backend
+    volumes:
+      - ./bitwarden/backend/data:/data
+      - ./bitwarden/backend/backup:/backup
+      - /etc/timezone:/etc/timezone:ro
+      - /etc/localtime:/etc/localtime:ro
+    environment:
+      - DB_FILE=/data/db.sqlite3
+      - BACKUP_FILE=/backup/backup.sqlite3
+      - CRON_TIME=0 1 * * *
+      - TIMESTAMP=false
+      - UID=0
+      - GID=0
+    networks:
+      - net
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "1m"
