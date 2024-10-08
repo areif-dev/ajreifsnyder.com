@@ -129,5 +129,19 @@ services:
     volumes: 
       - ./shopify-contact/shopify-contact.db:/var/lib/shopify-contact/shopify-contact.db 
       - ./shopify-contact/conf.json:/etc/shopify-contact/conf.json
+    secrets:
+      - shopify_contact_salt_file 
+      - shopify_contact_passwd_file
+    environment: 
+      SALT_FILE: /run/secrets/shopify_contact_salt_file
+      PASSWD_FILE: /run/secrets/shopify_contact_passwd_file 
     networks:
       - net
+
+secrets:
+  shopify_contact_salt_file: 
+    file: ${SHOPIFY_CONTACT_SALT_FILE}
+
+  shopify_contact_passwd_file:
+    file: ${SHOPIFY_CONTACT_PASSWD_FILE}
+
