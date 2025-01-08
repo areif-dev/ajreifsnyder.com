@@ -1,0 +1,8 @@
+FROM docker.io/fedora:latest 
+
+RUN dnf update -y && \
+    dnf install -y hugo
+
+WORKDIR /portfolio
+CMD ["hugo", "server", "--bind", "0.0.0.0"]
+
