@@ -26,7 +26,7 @@ session:
   cookies: 
     - name: 'authelia_session'
       domain: 'example.com'  
-      authelia_url: 'https://authelia.example.com'
+      authelia_url: 'https://auth.example.com'
       expiration: '1 hour'
       inactivity: '5 minutes'
 
