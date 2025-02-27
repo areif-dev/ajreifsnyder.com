@@ -137,7 +137,7 @@ services:
       - net
 
   portfolio:
-    image: nginx:alpine
+    image: docker.io/nginx:alpine
     container_name: portfolio 
     restart: unless-stopped 
     labels:
@@ -148,7 +148,9 @@ services:
       - 'traefik.http.routers.portfolio.tls.certresolver=letsencrypt'
       - 'traefik.http.routers.portfolio.middlewares=authelia@docker'
     volumes: 
-      - ./portfolio/public:/usr/share/nginx/html
+      - ./portfolio/public:/usr/share/nginx/html:z
+    networks:
+      - net
 
 secrets:
   shopify_contact_passwd_file:
