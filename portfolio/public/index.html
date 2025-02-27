@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Coming Soon</title>
+    <style>
+        body {
+            background-color: #282a36;
+            color: #f8f8f2;
+            font-family: "Courier New", monospace;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            flex-direction: column;
+        }
+        .terminal {
+            background-color: #21222c;
+            padding: 20px;
+            border-radius: 5px;
+            width: 80%;
+            max-width: 600px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+        }
+        .prompt {
+            color: #50fa7b;
+        }
+        .cursor {
+            display: inline-block;
+            width: 10px;
+            height: 16px;
+            background-color: #f8f8f2;
+            animation: blink 1s infinite;
+        }
+        @keyframes blink {
+            50% { opacity: 0; }
+        }
+    </style>
+</head>
+<body>
+    <div class="terminal">
+        <p><span class="prompt">user@linux:~$</span> echo "Coming Soon..."</p>
+        <p>Coming Soon...</p>
+        <span class="cursor"></span>
+    </div>
+</body>
+</html>
+
