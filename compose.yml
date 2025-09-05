@@ -156,7 +156,8 @@ services:
     image: ghcr.io/areif-dev/bot-auth:latest 
     container_name: bot-auth 
     restart: unless-stopped 
-    ports: 3000
+    ports: 
+      - 3000
     labels: 
       - 'traefik.enable=true'
       - 'traefik.http.routers.bot_auth.rule=Host(`bot-auth.${DOMAIN}`)'
