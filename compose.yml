@@ -165,6 +165,12 @@ services:
       - 'traefik.http.routers.bot_auth.tls=true'
       - 'traefik.http.routers.bot_auth.tls.certresolver=letsencrypt'
       - 'traefik.http.routers.bot_auth.middlewares=authelia@docker'
+    environment: 
+      - SPOTIFY_CLIENT_ID=${DISCORD_BOT_SPOTIFY_CLIENT_ID}
+      - SPOTIFY_CLIENT_SECRET=${DISCORD_BOT_SPOTIFY_CLIENT_SECRET}
+      - AUTH_SERVER=${DISCORD_BOT_AUTH_SERVER}
+      - AUTH_SERVER_SECURITY=${DISCORD_BOT_AUTH_SERVER_SECURITY}
+      - DISCORD_BOT_NAME=${DISCORD_BOT_NAME}
     networks:
       - net
     
