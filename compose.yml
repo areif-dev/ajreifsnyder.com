@@ -152,6 +152,19 @@ services:
     networks:
       - net
 
+  bot_auth:
+    image: ghcr.io/areif-dev/bot-auth:latest 
+    container_name: bot-auth 
+    restart: unless-stopped 
+    ports: 3000
+    labels: 
+      - 'traefik.enable=true'
+      - 'traefik.http.routers.bot_auth.rule=Host(`bot-auth.${DOMAIN}`)'
+      - 'traefik.http.routers.bot_auth.entrypoints=https'
+      - 'traefik.http.routers.bot_auth.tls=true'
+      - 'traefik.http.routers.bot_auth.tls.certresolver=letsencrypt'
+      - 'traefik.http.routers.bot_auth.middlewares=authelia@docker'
+    
 secrets:
   shopify_contact_passwd_file:
     file: ${SHOPIFY_CONTACT_PASSWD_FILE}
